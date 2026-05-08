@@ -51,12 +51,6 @@ if(OPENMOQ_ENABLE_PICOQUIC AND EXISTS "${OPENMOQ_PICOQUIC_SOURCE_DIR}/CMakeLists
         set(BUILD_PQBENCH OFF CACHE BOOL "" FORCE)
         set(BUILD_LOGLIB ON CACHE BOOL "" FORCE)
         set(BUILD_LOGREADER OFF CACHE BOOL "" FORCE)
-        if(WIN32 AND EXISTS "${OPENMOQ_PICOTLS_SOURCE_DIR}/picotlsvs/picotls")
-            # picotls.h includes "wincompat.h" on Windows but picotls's own CMakeLists.txt
-            # does not add picotlsvs/picotls to its include path. Inject it globally so
-            # the file is found when picotls compiles under FetchContent inside picoquic.
-            include_directories(BEFORE "${OPENMOQ_PICOTLS_SOURCE_DIR}/picotlsvs/picotls")
-        endif()
         if(APPLE)
             # picotls appends literal "(" and ")" list items when Brotli is
             # discovered via pkg-config. On macOS, CMake rejects the resulting
@@ -97,6 +91,12 @@ if(OPENMOQ_ENABLE_PICOQUIC AND EXISTS "${OPENMOQ_PICOQUIC_SOURCE_DIR}/CMakeLists
                     set_target_properties("${_picotls_exe}" PROPERTIES EXCLUDE_FROM_ALL ON)
                 endif()
             endforeach()
+            # picotls.h includes "wincompat.h" on Windows but picotls's own CMakeLists.txt
+            # does not add picotlsvs/picotls to picotls-core's include path.
+            if(TARGET picotls-core AND EXISTS "${OPENMOQ_PICOTLS_SOURCE_DIR}/picotlsvs/picotls")
+                target_include_directories(picotls-core PRIVATE
+                    "${OPENMOQ_PICOTLS_SOURCE_DIR}/picotlsvs/picotls")
+            endif()
             # picotls-core calls wintimeofday() which is only compiled inside the VS
             # project files; add it explicitly for CMake Windows builds.
             if(TARGET picotls-core AND EXISTS "${OPENMOQ_PICOTLS_SOURCE_DIR}/picotlsvs/picotls/wintimeofday.c")
@@ -105,7 +105,7 @@ if(OPENMOQ_ENABLE_PICOQUIC AND EXISTS "${OPENMOQ_PICOQUIC_SOURCE_DIR}/CMakeLists
             endif()
             # picotls-minicrypto uses the Windows BCrypt API for random bytes.
             if(TARGET picotls-minicrypto)
-                target_link_libraries(picotls-minicrypto PRIVATE bcrypt)
+                target_link_libraries(picotls-minicrypto bcrypt)
             endif()
         endif()
         set(OPENMOQ_HAS_PICOQUIC ON)
