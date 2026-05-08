@@ -13,7 +13,7 @@ option(OPENMOQ_BUILD_TESTS "Build OpenMOQ publisher tests" ON)
 option(OPENMOQ_ENABLE_PICOQUIC "Enable picoquic transport integration when picoquic is available" ON)
 option(OPENMOQ_RUN_PICOQUIC_SMOKE_TESTS "Build and run picoquic loopback smoke tests" OFF)
 
-set(OPENMOQ_PICOQUIC_SOURCE_DIR "/media/mondain/terrorbyte/workspace/github/picoquic" CACHE PATH
+set(OPENMOQ_PICOQUIC_SOURCE_DIR "" CACHE PATH
     "Path to a picoquic source checkout")
 
 set(OPENMOQ_HAS_PICOQUIC OFF)
@@ -101,20 +101,26 @@ target_compile_features(openmoq_publisher_lib PUBLIC cxx_std_20)
 
 if(OPENMOQ_HAS_PICOQUIC)
     target_compile_definitions(openmoq_publisher_lib PRIVATE OPENMOQ_HAS_PICOQUIC=1)
-    if(TARGET picohttp-core AND TARGET picoquic-log AND NOT APPLE AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+    if(TARGET picohttp-core AND TARGET picoquic-log AND NOT APPLE AND NOT WIN32 AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+        # Linux with modern CMake: RESCAN resolves circular deps between picohttp/picoquic via --start-group/--end-group.
         target_link_libraries(openmoq_publisher_lib PRIVATE "$<LINK_GROUP:RESCAN,picohttp-core,picoquic-log,picoquic-core>")
         target_include_directories(openmoq_publisher_lib PRIVATE "${OPENMOQ_PICOQUIC_SOURCE_DIR}/picohttp")
     else()
         target_link_libraries(openmoq_publisher_lib PRIVATE picoquic-core)
     endif()
-    if(TARGET picohttp-core AND (APPLE OR CMAKE_VERSION VERSION_LESS "3.24"))
+    if(TARGET picohttp-core AND (APPLE OR WIN32 OR CMAKE_VERSION VERSION_LESS "3.24"))
         target_link_libraries(openmoq_publisher_lib PRIVATE picohttp-core)
         target_include_directories(openmoq_publisher_lib PRIVATE "${OPENMOQ_PICOQUIC_SOURCE_DIR}/picohttp")
+    endif()
+    if(WIN32)
+        target_link_libraries(openmoq_publisher_lib PRIVATE ws2_32 iphlpapi)
     endif()
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(openmoq_publisher_lib PRIVATE -Wall -Wextra -Wpedantic)
+elseif(MSVC)
+    target_compile_options(openmoq_publisher_lib PRIVATE /W4 /WX- /utf-8)
 endif()
 
 add_executable(openmoq-publisher src/main.cpp)
