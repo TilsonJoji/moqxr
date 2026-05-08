@@ -129,7 +129,7 @@ Useful CMake options:
 
 If you already have a sample MP4 and just want to see what the publisher does, these are the most useful first commands.
 
-> **Windows note**: replace `./build/openmoq-publisher` with `build\Release\openmoq-publisher.exe` in the examples below, and use `set OPENMOQ_PICOQUIC_TRACE=1` instead of the shell prefix form.
+> **Windows note**: replace `./build/openmoq-publisher` with `build\Release\openmoq-publisher.exe` in the examples below. For trace-enabled examples, use `set OPENMOQ_PICOQUIC_TRACE=1` in `cmd.exe` or `$env:OPENMOQ_PICOQUIC_TRACE=1` in PowerShell instead of the shell prefix form.
 
 Inspect the publish plan with the default settings:
 
